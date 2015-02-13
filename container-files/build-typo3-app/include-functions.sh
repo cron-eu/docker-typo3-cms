@@ -28,7 +28,7 @@ function wait_for_db() {
     if [[ $res -ne 0 ]]; then log "Waiting for DB service ($T3APP_DB_HOST:$T3APP_DB_PORT username:$T3APP_DB_USER)..." && sleep 2; fi
   done
   set -e
-  
+
   # Display DB status...
   log "Database status:"
   mysql $MYSQL_CMD_PARAMS --execute "status"
@@ -52,27 +52,22 @@ function install_typo3_app() {
   fi
 
   cd $APP_ROOT
-  
-  # Make sure cache is cleared for all contexts. This is empty during the 1st container launch,
-  # but, when container is re-run (with shared data volume), not clearing it can cause random issues
-  # (e.g. due to changes in the newly pulled code).
-  rm -rf rm -rf Data/Temporary/*
-  
+
   # Allow switching between branches for running containers
   # E.g. user can provide different branch for `docker build` (in Dockerfile)
   # and different when launching the container.
   # Note: it's done with --force param, so local conflicting changes will be thrown away. But we assume sb who is doing this knows about it.
   git fetch && git checkout --force $T3APP_BUILD_BRANCH
-  
+
   # Debug: show most recent git log messages
   log "TYPO3 app installed. Most recent commits:"
   git log -5 --pretty=format:"%h %an %cr: %s" --graph && echo # Show most recent changes
-  
+
   # If app is/was already installed, pull the most recent code
   if [ "${T3APP_ALWAYS_DO_PULL^^}" = TRUE ]; then
     install_typo3_app_do_pull
   fi
-  
+
   # If composer.lock has changed, this will re-install things...
   composer install $T3APP_BUILD_COMPOSER_PARAMS
 }
@@ -98,15 +93,15 @@ function install_typo3_app_do_pull() {
     git status
     git stash --include-untracked
   fi
-  
+
   if [[ ! $(git pull -f) ]]; then
     log "git pull failed. Trying once again with 'git reset --hard origin/${T3APP_BUILD_BRANCH}'..."
     git reset --hard origin/$T3APP_BUILD_BRANCH
   fi
-  
+
   log "Most recent commits (after newest codebase has been pulled):"
   git log -10 --pretty=format:"%h %an %cr: %s" --graph
-  
+
   set -e # restore -e setting
 }
 
@@ -151,12 +146,12 @@ function create_vhost_conf() {
 
   sed -i -r "s#%server_name%#${vhost_names}#g" $VHOST_FILE
   sed -i -r "s#%root%#${APP_ROOT}#g" $VHOST_FILE
-  
+
   # Configure redirect: www to non-www
   # @TODO: make it configurable via env var
   # @TODO: make possible reversed behaviour (non-www to www)
   sed -i -r "s#%server_name_primary%#${vhost_names_arr[0]}#g" $VHOST_FILE
-  
+
   cat $VHOST_FILE
   log "Nginx vhost configured."
 }
@@ -178,7 +173,7 @@ function create_settings_yaml() {
   local settings_db_name=$2
 
   mkdir -p $(dirname $settings_file)
-  
+
   if [ ! -f $settings_file ]; then
     cat $SETTINGS_SOURCE_FILE > $settings_file
     log "Configuration file $settings_file created."
@@ -193,68 +188,6 @@ function create_settings_yaml() {
 
   cat $settings_file
   log "$settings_file updated."
-}
-
-#########################################################
-# Check latest TYPO3 doctrine:migration status.
-# Used to detect if this is fresh installation
-# or re-run from previous state.
-#########################################################
-function get_db_executed_migrations() {
-  local v=$(./flow doctrine:migrationstatus | grep -i 'Executed Migrations' | awk '{print $4$5}')
-  echo $v
-}
-
-#########################################################
-# Provision database (i.e. doctrine:migrate)
-#########################################################
-function doctrine_update() {
-  log "Doing doctrine:migrate..."
-  ./flow doctrine:migrate --quiet
-  log "Finished doctrine:migrate."
-}
-
-#########################################################
-# Create admin user
-#########################################################
-function create_admin_user() {
-  log "Creating admin user..."
-  ./flow user:create --roles Administrator $T3APP_USER_NAME $T3APP_USER_PASS $T3APP_USER_FNAME $T3APP_USER_LNAME
-}
-
-#########################################################
-# Install site package
-# Arguments:
-#   String: site package name to install
-#########################################################
-function neos_site_package_install() {
-  local site_package_name=$@
-  if [ "${site_package_name^^}" = FALSE ]; then
-    log "Skipping installing site package (T3APP_NEOS_SITE_PACKAGE is set to FALSE)."
-  else
-    log "Installing $site_package_name site package..."
-    ./flow site:import --packageKey $site_package_name
-  fi
-}
-
-#########################################################
-# Prune all site data.
-# Used when re-importing the site package.
-#########################################################
-function neos_site_package_prune() {
-  log "Pruning old site..."
-  ./flow site:prune --confirmation
-  log "Done."
-}
-
-#########################################################
-# Warm up Flow caches for specified FLOW_CONTEXT
-# Arguments:
-#   String: FLOW_CONTEXT value, eg. Development, Production
-#########################################################
-function warmup_cache() {
-  FLOW_CONTEXT=$@ ./flow flow:cache:flush --force;
-  FLOW_CONTEXT=$@ ./flow cache:warmup;
 }
 
 #########################################################
@@ -279,52 +212,8 @@ function user_build_script() {
 }
 
 #########################################################
-# Get virtual host name used for Behat testing.
-# This host name has in format 'behat.dev.[BASE_DOMAIN]' 
-# We relay on the fact that Nginx is configured that
-# it sets FLOW_CONTEXT to Development when 'dev' string
-# is detected in hostname and respectively
-# Development/Behat if 'behat' string is detected.
-# Globals:
-#   T3APP_VHOST_NAMES: all vhost name(s), space-separated  
-#########################################################
-function behat_get_vhost() {
-  behat_vhost=""
-  for vhost in $T3APP_VHOST_NAMES; do
-    if [[ $vhost == *behat* ]]; then
-      behat_vhost=$vhost
-    fi
-  done
-  
-  echo $behat_vhost
-}
-
-#########################################################
-# Iterate through all installed packages in Packages/
-# look up for */Tests/Behavior/behat.yml[.dist] files 
-# and set there behat vhost in base_url: variable.
-# Arguments:
-#   String: vhost used for Behat tests
-#########################################################
-function behat_configure_yml_files() {
-  local behat_vhost=$@
-
-  cd $APP_ROOT;
-  for f in Packages/*/*/Tests/Behavior/behat.yml.dist; do
-    target_file=${f/.dist/}
-    if [ ! -f $target_file ]; then
-      cp $f $target_file
-    fi
-    # Find all base_url: setting (might be commented out) and replace it with $behat_vhost
-    sed -i -r "s/(#\s?)?base_url:.+/base_url: http:\/\/${behat_vhost}\//g" $target_file
-    log "$target_file configured for Behat testing."
-  done
-}
-
-
-#########################################################
 # Configure environment (e.g. PATH).
-# Configure .bash_profile for 'www' user with all 
+# Configure .bash_profile for 'www' user with all
 # necessary scripts/settings like /etc/hosts settings.
 # Globals:
 #   APP_ROOT
@@ -352,4 +241,13 @@ function configure_env() {
   sed -i -r "s#%T3APP_BUILD_BRANCH%#${T3APP_BUILD_BRANCH}#g" $BASH_RC_FILE
   sed -i -r "s#%T3APP_NAME%#${T3APP_NAME}#g" $BASH_RC_FILE
   sed -i -r "s#%T3APP_VHOST_NAMES%#${T3APP_VHOST_NAMES}#g" $BASH_RC_FILE
+}
+
+#########################################################
+# Prepare the site for the Web-based wizard
+#########################################################
+function prepare_typo3_app_setup_wizard() {
+	cd $APP_ROOT
+	touch FIRST_INSTALL
+	ln -s typo3 typo3_src
 }
