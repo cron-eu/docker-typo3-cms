@@ -105,21 +105,6 @@ function install_typo3_app_do_pull() {
   set -e # restore -e setting
 }
 
-
-#########################################################
-# Creates database for TYPO3 app, if doesn't exist yet
-# Globals:
-#   MYSQL_CMD_PARAMS
-# Arguments:
-#   String: db name to create
-#########################################################
-function create_app_db() {
-  local db_name=$@
-  log "Creating TYPO3 app database '$db_name' (if it doesn't exist yet)..."
-  mysql $MYSQL_CMD_PARAMS --execute="CREATE DATABASE IF NOT EXISTS $db_name CHARACTER SET utf8 COLLATE utf8_general_ci"
-  log "DB created."
-}
-
 #########################################################
 # Create Nginx vhost, if it doesn't exist yet
 # Globals:
@@ -244,9 +229,14 @@ function configure_env() {
 }
 
 #########################################################
-# Prepare the site for the Web-based wizard
+# Setup a new TYPO3 CMS Site
 #########################################################
-function prepare_typo3_app_setup_wizard() {
+function setup_typo3_cms() {
 	cd $APP_ROOT
-	touch FIRST_INSTALL
+	./typo3cms install:setup --database-user-name="${T3APP_DB_USER}" --database-user-password="${T3APP_DB_PASS}" --database-host-name="${T3APP_DB_HOST}" --database-port="${T3APP_DB_PORT}" --database-socket=false --database-name="${T3APP_DB_NAME}" --admin-user-name="${T3APP_USER_NAME}" --admin-password="${T3APP_USER_PASS}" --site-name="${T3APP_NAME}"
+
+	if ! grep trustedHostsPattern typo3conf/LocalConfiguration.php >/dev/null ; then
+		awk '{print $0} /^\s*.SYS.\s+=>\s+array/ { print "\t\t\"trustedHostsPattern\" => \".*\"," }' typo3conf/LocalConfiguration.php > typo3conf/LocalConfiguration.php_ && \
+			mv typo3conf/LocalConfiguration.php_ typo3conf/LocalConfiguration.php
+	fi
 }

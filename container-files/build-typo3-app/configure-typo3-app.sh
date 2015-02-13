@@ -23,8 +23,6 @@ CONTAINER_IP=$(ip -4 addr show eth0 | grep inet | cut -d/ -f1 | awk '{print $2}'
 BASH_RC_FILE="$WEB_SERVER_ROOT/.bash_profile"
 BASH_RC_SOURCE_FILE="$CWD/.bash_profile"
 
-
-
 # Configure some environment aspects (PATH, /etc/hosts, 'www' user profile etc)
 configure_env
 
@@ -40,13 +38,7 @@ wait_for_db
 #
 if [ "${T3APP_DO_INIT^^}" = TRUE ]; then
   log "Configuring TYPO3 CMS app..." && log
-  create_app_db $T3APP_DB_NAME
-
-  # prepare the web-based wizzard
-  prepare_typo3_app_setup_wizard
-
-  #create_settings_yaml "Configuration/Settings.yaml" $T3APP_DB_NAME
-
+  setup_typo3_cms
 fi
 # Regular TYPO3 app initialisation (END)
 
