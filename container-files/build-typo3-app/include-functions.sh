@@ -226,6 +226,15 @@ function configure_env() {
   sed -i -r "s#%T3APP_BUILD_BRANCH%#${T3APP_BUILD_BRANCH}#g" $BASH_RC_FILE
   sed -i -r "s#%T3APP_NAME%#${T3APP_NAME}#g" $BASH_RC_FILE
   sed -i -r "s#%T3APP_VHOST_NAMES%#${T3APP_VHOST_NAMES}#g" $BASH_RC_FILE
+
+  # setup default credentials for the mysql cli
+  cat <<EOF > ${WEB_SERVER_ROOT}/.my.cnf
+[client]
+user=${T3APP_DB_USER}
+password=${T3APP_DB_PASS}
+database=${T3APP_DB_NAME}
+host=${T3APP_DB_HOST}
+EOF
 }
 
 #########################################################
