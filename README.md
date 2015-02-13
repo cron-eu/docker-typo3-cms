@@ -1,8 +1,7 @@
 TYPO3 CMS | Docker image
 ========================
 
-This is a Docker-Image for the TYPO3 CMS (legacy) for development,
-heavily inspired by:
+This is a TYPO3 CMS Docker-Image for development, heavily inspired by:
 
 https://github.com/million12/docker-typo3-neos
 
