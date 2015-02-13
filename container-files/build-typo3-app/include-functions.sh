@@ -249,5 +249,4 @@ function configure_env() {
 function prepare_typo3_app_setup_wizard() {
 	cd $APP_ROOT
 	touch FIRST_INSTALL
-	ln -s typo3 typo3_src
 }
