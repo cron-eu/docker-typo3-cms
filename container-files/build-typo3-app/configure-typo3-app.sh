@@ -40,8 +40,11 @@ wait_for_db
 #
 if [ "${T3APP_DO_INIT^^}" = TRUE ]; then
   log "Configuring TYPO3 CMS app..." && log
+  create_app_db $T3APP_DB_NAME
 
-  #create_app_db $T3APP_DB_NAME
+  # prepare the web-based wizzard
+  prepare_typo3_app_setup_wizard
+
   #create_settings_yaml "Configuration/Settings.yaml" $T3APP_DB_NAME
 
 fi
