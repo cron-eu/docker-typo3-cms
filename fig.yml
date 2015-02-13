@@ -1,0 +1,30 @@
+db:
+  image: mariadb:latest
+  ports:
+    - 3306
+  environment:
+    MARIADB_PASS: secret-db-password-qpu34thqrgaR3
+    MARIADB_USER: root
+    MYSQL_ROOT_PASSWORD: secret-db-password-qpu34thqrgaR3
+
+web:
+  image: cron/docker-typo3-cms:latest
+  ports:
+    - '8000:80'
+  links:
+    - db:db
+  environment:
+    T3APP_VHOST_NAMES: typo3.boot2docker dev.typo3.boot2docker behat.typo3.boot2docker
+    T3APP_DB_USER: root
+
+dev:
+  image: million12/php-app-ssh
+  ports:
+    - '1022:22'
+  links:
+    - db:db
+    - web:web
+  volumes_from:
+    - web
+  environment:
+    IMPORT_GITHUB_PUB_KEYS: remuslazar
