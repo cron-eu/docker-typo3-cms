@@ -17,10 +17,10 @@ ENV T3APP_BUILD_REPO_URL https://github.com/cron-eu/TYPO3.CMS.Console.Distributi
 #
 # If you need to access your private repository, you'll need to add ssh keys to the image
 # and configure SSH to use them. You can do this in following way:
-ADD gh-repo-key /
-RUN \
-  chmod 600 /gh-repo-key && \
-  echo "IdentityFile /gh-repo-key" >> /etc/ssh/ssh_config
+# ADD gh-repo-key /
+# RUN \
+#   chmod 600 /gh-repo-key && \
+#   echo "IdentityFile /gh-repo-key" >> /etc/ssh/ssh_config
 
 # In your image based on this one you will have to run this script:
 RUN . /build-typo3-app/pre-install-typo3-app.sh
