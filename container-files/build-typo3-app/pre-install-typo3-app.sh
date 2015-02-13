@@ -20,7 +20,7 @@ echo "Configure PHP for TYPO3 CMS"
 echo
 
 # install needed php-modules
-yum install -y php-soap
+yum install -y php-soap GraphicsMagick
 # tweak the php max_execution_time
 sed -i 's/^max_execution_time = 120/max_execution_time = 240/' /etc/php.d/zz-php.ini
 
