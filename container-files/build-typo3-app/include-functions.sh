@@ -242,10 +242,20 @@ EOF
 #########################################################
 function setup_typo3_cms() {
 	cd $APP_ROOT
-	./typo3cms install:setup --database-user-name="${T3APP_DB_USER}" --database-user-password="${T3APP_DB_PASS}" --database-host-name="${T3APP_DB_HOST}" --database-port="${T3APP_DB_PORT}" --database-socket=false --database-name="${T3APP_DB_NAME}" --admin-user-name="${T3APP_USER_NAME}" --admin-password="${T3APP_USER_PASS}" --site-name="${T3APP_NAME}"
+	./typo3cms install:setup \
+			   --database-user-name="${T3APP_DB_USER}" \
+			   --database-user-password="${T3APP_DB_PASS}" \
+			   --database-host-name="${T3APP_DB_HOST}" \
+			   --database-port="${T3APP_DB_PORT}" \
+			   --database-socket="false" \
+			   --database-name="${T3APP_DB_NAME}" \
+			   --admin-user-name="${T3APP_USER_NAME}" \
+			   --admin-password="${T3APP_USER_PASS}" \
+			   --site-name="${T3APP_NAME}"
 
 	if ! grep trustedHostsPattern typo3conf/LocalConfiguration.php >/dev/null ; then
-		awk '{print $0} /^\s*.SYS.\s+=>\s+array/ { print "\t\t\"trustedHostsPattern\" => \".*\"," }' typo3conf/LocalConfiguration.php > typo3conf/LocalConfiguration.php_ && \
+		awk '{print $0} /^\s*.SYS.\s+=>\s+array/ { print "\t\t\"trustedHostsPattern\" => \".*\"," }' \
+			typo3conf/LocalConfiguration.php > typo3conf/LocalConfiguration.php_ && \
 			mv typo3conf/LocalConfiguration.php_ typo3conf/LocalConfiguration.php
 	fi
 }
