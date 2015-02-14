@@ -33,3 +33,13 @@ fig up -d
 
 Make sure to also adapt the settings in the fig-file to suit your
 needs (hostnames, github user etc.).
+
+### Import an existing Site
+
+```
+export T3APP_VHOST_NAMES
+make site=daz.preview.cron.eu db=daz_preview
+```
+
+Make sure to put your ssh-pub-key in `authorized_keys` from the user
+`www-data` on the remote server.
